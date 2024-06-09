@@ -2,11 +2,12 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Models\Note;
+use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreNoteRequest;
 use App\Http\Requests\UpdateNoteRequest;
-use App\Models\Note;
-use Illuminate\Http\Request;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class NoteController extends Controller
 {
@@ -106,17 +107,15 @@ class NoteController extends Controller
     public function destroy(string $id)
     {
         try {
-            $note = Note::find($id);
-            if(!$note){
-                return response()->json(['error' => 'Note not found'], 404);
-            }
-
-            $note->delete();
+            $note = Note::findOrFail($id)->delete();
             return response()->json(['message' => 'Note deleted successfully']);
+
+        } catch (ModelNotFoundException $e) {
+            return response()->json(['error' => 'Note not found'],404);
 
         } catch (\Throwable $th) {
 
-             return response()->json([
+            return response()->json([
                 'status' => false,
                 'message' => $th->getMessage()
             ],500);
