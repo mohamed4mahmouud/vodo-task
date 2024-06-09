@@ -10,6 +10,8 @@ Route::prefix('auth')->group(function () {
     Route::post('register', [AuthController::class , 'register']);
     //login
     Route::post('login', [AuthController::class , 'login']);
+    //logout
+    Route::post('logout' , [AuthController::class, 'logout'])->middleware('auth:sanctum');
 });
 
 

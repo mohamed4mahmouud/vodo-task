@@ -50,11 +50,12 @@ class AuthController extends Controller
             }
 
             $user = User::where('username' , $request->username)->first();
+            $token = $user->createToken("API TOKEN")->plainTextToken;
 
             return response()->json([
                 'status' => true,
                 'message' => 'User logged in successfully',
-                'token' => $user->createToken("API TOKEN")->plainTextToken
+                'token' => $token
             ],200);
 
         } catch (\Throwable $th) {
@@ -64,5 +65,14 @@ class AuthController extends Controller
                 'message' => $th->getMessage()
             ],500);
         }
+    }
+
+    public function logout (Request $request)
+    {
+        $request->user()->tokens()->delete();
+
+        return response()->json([
+            'message' => 'Logged out successfully'
+        ]);
     }
 }
