@@ -2,14 +2,17 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
-use App\Http\Requests\LoginRequest;
-use App\Http\Requests\RegisterRequest;
-use App\Http\Requests\UpdatePasswordRequest;
 use App\Models\User;
 use Illuminate\Http\Request;
+use App\Http\Requests\LoginRequest;
+use App\Http\Controllers\Controller;
+use Illuminate\Auth\Events\Verified;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use App\Http\Requests\RegisterRequest;
+use Illuminate\Auth\Events\Registered;
+use App\Http\Requests\UpdatePasswordRequest;
+use Illuminate\Foundation\Auth\EmailVerificationRequest;
 
 class AuthController extends Controller
 {
@@ -23,6 +26,8 @@ class AuthController extends Controller
                 'email' => $request->email,
                 'password' => Hash::make($request->password)
             ]);
+
+            event(new Registered($user));
 
             return response()->json([
                 'message' => 'User registered successfully',
@@ -57,7 +62,7 @@ class AuthController extends Controller
                 'status' => true,
                 'message' => 'User logged in successfully',
                 'token' => $token
-            ],200);
+            ],200)->header('Authorization', $token);
 
         } catch (\Throwable $th) {
 
@@ -79,22 +84,51 @@ class AuthController extends Controller
 
     public function updatePassword (UpdatePasswordRequest $request)
     {
-        $user = $request->user();
+        try {
 
-        if(!Hash::check($request->currentPassword, $user->password)) {
+            $user = $request->user();
+
+            if(!Hash::check($request->currentPassword, $user->password)) {
+                return response()->json([
+                    'status' => false,
+                    'error' => 'The current password is incorrect'
+                ], 403);
+            }
+
+            $user->update([
+                'password' => Hash::make($request->newPassword),
+            ]);
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Password updated successfully',
+            ]);
+
+        } catch (\Throwable $th) {
             return response()->json([
                 'status' => false,
-                'error' => 'The current password is incorrect'
-            ], 403);
+                'message' => $th->getMessage()
+            ],500);
         }
 
-        $user->update([
-            'password' => Hash::make($request->newPassword),
-        ]);
-
-        return response()->json([
-            'status' => true,
-            'message' => 'Password updated successfully',
-        ]);
     }
+
+    public function verifyEmail(EmailVerificationRequest $request)
+{
+    if ($request->user()->hasVerifiedEmail()) {
+        return response()->json([
+            'status' => false,
+            'message' => 'Email already verified.'
+        ], 400);
+    }
+
+    if ($request->user()->markEmailAsVerified()) {
+        event(new Verified($request->user()));
+    }
+
+    return response()->json([
+        'status' => true,
+        'message' => 'Email verified successfully.'
+    ], 200);
+}
 }

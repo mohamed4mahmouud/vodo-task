@@ -17,9 +17,12 @@ class NoteController extends Controller
     public function index(Request $request)
     {
         try {
-
             $notes = Note::where('user_id' , $request->user()->id)->get();
-            return response()->json($notes);
+            return response()->json(['
+                status' => true,
+                'message' => "success",
+                "data"=>$notes
+            ]);
 
         } catch (\Throwable $th) {
 
@@ -41,7 +44,11 @@ class NoteController extends Controller
                 'content' => $request->content,
                 'user_id' => $request->user()->id
             ]);
-            return response()->json($note , 201);
+            return response()->json([
+                'status' => true,
+                'message' => "success",
+                'data' => $note
+            ],201);
 
         }  catch (\Throwable $th) {
 
@@ -86,7 +93,7 @@ class NoteController extends Controller
                 'content' => $request->content,
             ]);
 
-            return response()->json($note);
+            return response()->json(['message' => 'Note updated successfully', 'note' => $note]);
 
         } catch (\Throwable $th) {
             return response()->json([
@@ -107,7 +114,7 @@ class NoteController extends Controller
             }
 
             $note->delete();
-            return response()->json(['message' => 'Note deleted successfully']);
+            return response()->json(['message' => 'Note deleted successfully'],204);
 
         } catch (\Throwable $th) {
 
