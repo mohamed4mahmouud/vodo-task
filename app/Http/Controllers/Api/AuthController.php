@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
+use App\Http\Requests\UpdatePasswordRequest;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -73,6 +74,27 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'Logged out successfully'
+        ]);
+    }
+
+    public function updatePassword (UpdatePasswordRequest $request)
+    {
+        $user = $request->user();
+
+        if(!Hash::check($request->currentPassword, $user->password)) {
+            return response()->json([
+                'status' => false,
+                'error' => 'The current password is incorrect'
+            ], 403);
+        }
+
+        $user->update([
+            'password' => Hash::make($request->newPassword),
+        ]);
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Password updated successfully',
         ]);
     }
 }

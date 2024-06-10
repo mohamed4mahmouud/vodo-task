@@ -5,9 +5,9 @@ namespace App\Http\Controllers\Api;
 use App\Models\Note;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Gate;
 use App\Http\Requests\StoreNoteRequest;
 use App\Http\Requests\UpdateNoteRequest;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class NoteController extends Controller
 {
@@ -43,7 +43,7 @@ class NoteController extends Controller
             ]);
             return response()->json($note , 201);
 
-        } catch (\Throwable $th) {
+        }  catch (\Throwable $th) {
 
              return response()->json([
                 'status' => false,
@@ -55,15 +55,12 @@ class NoteController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+    public function show(Note $note )
     {
         try {
-
-            $note = Note::find($id);
-            if(!$note){
-                return response()->json(['error' => 'Note not found'], 404);
+            if(Gate::denies('view-update-delete' , $note)) {
+                abort(403 , 'You are not allowed to show this note');
             }
-
             return response()->json($note);
 
         } catch (\Throwable $th) {
@@ -78,40 +75,39 @@ class NoteController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdateNoteRequest $request, string $id)
+    public function update(UpdateNoteRequest $request, Note $note)
     {
         try {
-            $note = Note::find($id);
-            if(!$note){
-                return response()->json(['error' => 'Note not found'], 404);
-            }
 
+            if(Gate::denies('view-update-delete' , $note)) {
+                abort(403 , 'You are not allowed to update this note');
+            }
             $note->update([
                 'content' => $request->content,
-                'user_id' => $request->user()->id
             ]);
+
             return response()->json($note);
 
         } catch (\Throwable $th) {
-
             return response()->json([
                 'status' => false,
                 'message' => $th->getMessage()
-            ],500);
+            ], 500);
         }
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(Note $note)
     {
         try {
-            $note = Note::findOrFail($id)->delete();
-            return response()->json(['message' => 'Note deleted successfully']);
+            if(Gate::denies('view-update-delete' , $note)) {
+                abort(403 , 'You are not allowed to delete this note');
+            }
 
-        } catch (ModelNotFoundException $e) {
-            return response()->json(['error' => 'Note not found'],404);
+            $note->delete();
+            return response()->json(['message' => 'Note deleted successfully']);
 
         } catch (\Throwable $th) {
 
